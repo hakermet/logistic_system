@@ -1,0 +1,138 @@
+<!-- routes/templates/routes/route_detail.html -->
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Деталі маршруту - SwiftGlobal Logistics{% endblock %}
+
+{% block content %}
+<div class="container">
+    <div class="row">
+        <div class="col-md-8">
+            <div class="card">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <h2 class="card-title mb-0">Деталі маршруту #{{ route.id }}</h2>
+                    <div class="btn-group">
+                        <a href="{% url 'routes:map_view' route.id %}" class="btn btn-primary">
+                            <i class="fas fa-map-marked-alt"></i> Карта
+                        </a>
+                        <a href="{% url 'routes:update_route' route.id %}" class="btn btn-warning">
+                            <i class="fas fa-edit"></i> Редагувати
+                        </a>
+                        <a href="{% url 'routes:delete_route' route.id %}" class="btn btn-danger" 
+                           onclick="return confirm('Ви впевнені, що хочете видалити цей маршрут?')">
+                            <i class="fas fa-trash"></i> Видалити
+                        </a>
+                    </div>
+                </div>
+                <div class="card-body">
+                    <div class="row mb-4">
+                        <div class="col-md-6">
+                            <h5>Початкова адреса</h5>
+                            <p class="text-muted">{{ route.start_address }}</p>
+                            <div class="small">
+                                <strong>Координати:</strong><br>
+                                Широта: {{ route.start_lat|default:"Не визначено" }}<br>
+                                Довгота: {{ route.start_lng|default:"Не визначено" }}
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <h5>Кінцева адреса</h5>
+                            <p class="text-muted">{{ route.end_address }}</p>
+                            <div class="small">
+                                <strong>Координати:</strong><br>
+                                Широта: {{ route.end_lat|default:"Не визначено" }}<br>
+                                Довгота: {{ route.end_lng|default:"Не визначено" }}
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="card bg-light">
+                                <div class="card-body">
+                                    <h5 class="card-title">Відстань</h5>
+                                    <p class="card-text h3">
+                                        {{ route.distance|default:"0" }} км
+                                    </p>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="card bg-light">
+                                <div class="card-body">
+                                    <h5 class="card-title">Тривалість</h5>
+                                    <p class="card-text h3">
+                                        {{ route.duration|default:"0" }} хв
+                                    </p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    {% if route.instructions %}
+                    <div class="mt-4">
+                        <h5>Інструкції маршруту</h5>
+                        <div class="list-group">
+                            {% for instruction in route.instructions %}
+                            <div class="list-group-item">
+                                <div class="d-flex w-100 justify-content-between">
+                                    <h6 class="mb-1">Крок {{ forloop.counter }}</h6>
+                                    <small>{{ instruction.distance }} м</small>
+                                </div>
+                                <p class="mb-1">{{ instruction.text }}</p>
+                            </div>
+                            {% endfor %}
+                        </div>
+                    </div>
+                    {% endif %}
+                </div>
+                <div class="card-footer text-muted">
+                    Створено: {{ route.created_at|date:"d.m.Y H:i" }}
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md-4">
+            <div class="card mb-4">
+                <div class="card-header">
+                    <h5 class="card-title mb-0">Швидкі дії</h5>
+                </div>
+                <div class="card-body">
+                    <div class="d-grid gap-2">
+                        <a href="{% url 'routes:route_list' %}" class="btn btn-outline-primary">
+                            <i class="fas fa-arrow-left"></i> До списку маршрутів
+                        </a>
+                        <a href="#" class="btn btn-outline-success">
+                            <i class="fas fa-print"></i> Друк маршруту
+                        </a>
+                        <a href="#" class="btn btn-outline-info">
+                            <i class="fas fa-share"></i> Поділитися
+                        </a>
+                    </div>
+                </div>
+            </div>
+
+            {% if related_routes %}
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="card-title mb-0">Схожі маршрути</h5>
+                </div>
+                <div class="list-group list-group-flush">
+                    {% for related_route in related_routes %}
+                    <a href="{% url 'routes:route_detail' related_route.id %}" class="list-group-item list-group-item-action">
+                        <div class="d-flex w-100 justify-content-between">
+                            <h6 class="mb-1">Маршрут #{{ related_route.id }}</h6>
+                            <small>{{ related_route.distance }} км</small>
+                        </div>
+                        <small class="text-muted">
+                            {{ related_route.start_address }} → {{ related_route.end_address }}
+                        </small>
+                    </a>
+                    {% endfor %}
+                </div>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+{% endblock %}

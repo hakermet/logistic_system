@@ -1,0 +1,16 @@
+<!-- templates/orders/delete_order.html -->
+{% extends 'orders/base.html' %}
+
+{% block title %}Видалення замовлення{% endblock %}
+
+{% block content %}
+<h1>Видалення замовлення</h1>
+
+<p>Ви впевнені, що хочете видалити замовлення "{{ order.title }}"?</p>
+
+<form method="post">
+    {% csrf_token %}
+    <button type="submit" class="btn btn-danger">Так, видалити</button>
+    <a href="{% url 'order_list' %}" class="btn btn-secondary">Скасувати</a>
+</form>
+{% endblock %}

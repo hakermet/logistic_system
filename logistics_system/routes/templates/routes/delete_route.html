@@ -1,0 +1,16 @@
+<!-- templates/routes/delete_route.html -->
+{% extends 'routes/base.html' %}
+
+{% block title %}Видалення маршруту{% endblock %}
+
+{% block content %}
+<h1>Видалення маршруту</h1>
+
+<p>Ви впевнені, що хочете видалити маршрут для замовлення "{{ route.order.title }}"?</p>
+
+<form method="post">
+    {% csrf_token %}
+    <button type="submit" class="btn btn-danger">Так, видалити</button>
+    <a href="{% url 'route_list' %}" class="btn btn-secondary">Скасувати</a>
+</form>
+{% endblock %}

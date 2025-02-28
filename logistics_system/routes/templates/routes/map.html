@@ -1,0 +1,87 @@
+{% extends 'base.html' %}
+
+{% block title %}Карта маршруту{% endblock %}
+
+{% block extra_css %}
+<style>
+    #map {
+        height: 600px;
+        width: 100%;
+        border-radius: 8px;
+        box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+        margin: 20px 0;
+    }
+    .route-info {
+        padding: 20px;
+        margin-bottom: 20px;
+        background: #f8f9fa;
+        border-radius: 8px;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container">
+    <div class="row">
+        <div class="col-12">
+            <h2 class="mb-4">Маршрут #{{ route.id }}</h2>
+            <div class="route-info">
+                <p><strong>Початкова точка:</strong> {{ route.start_place }}</p>
+                <p><strong>Кінцева точка:</strong> {{ route.end_place }}</p>
+                <p><strong>Відстань:</strong> {{ route.distance }} км</p>
+                <p><strong>Тривалість:</strong> {{ route.duration }} хв</p>
+            </div>
+            <div id="map"></div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="https://maps.googleapis.com/maps/api/js?key=AIzaSyABC7deHCmQO5p-62DciZhICHzSCwjUxDM&libraries=places"></script>
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    if (typeof google === 'undefined' || typeof google.maps === 'undefined') {
+        console.error('Google Maps API не завантажено');
+        return;
+    }
+
+    // Ініціалізація Google Maps
+    const map = new google.maps.Map(document.getElementById('map'), {
+        center: { lat: 48.379433, lng: 31.165581 },
+        zoom: 6
+    });
+
+    const directionsService = new google.maps.DirectionsService();
+    const directionsRenderer = new google.maps.DirectionsRenderer({ map: map });
+
+    // Отримання даних маршруту з Django API
+    fetch(`/routes/api/route/{{ route.id }}/`)
+        .then(response => response.json())
+        .then(data => {
+            if (!data.start_lat || !data.start_lng || !data.end_lat || !data.end_lng) {
+                throw new Error('Координати не знайдено');
+            }
+
+            const start = { lat: parseFloat(data.start_lat), lng: parseFloat(data.start_lng) };
+            const end = { lat: parseFloat(data.end_lat), lng: parseFloat(data.end_lng) };
+
+            // Відображення маршруту на Google Maps
+            directionsService.route({
+                origin: start,
+                destination: end,
+                travelMode: 'DRIVING'
+            }, (response, status) => {
+                if (status === 'OK') {
+                    directionsRenderer.setDirections(response);
+                } else {
+                    console.error('Помилка побудови маршруту:', status);
+                }
+            });
+        })
+        .catch(error => {
+            console.error('Помилка при отриманні даних маршруту:', error);
+        });
+});
+</script>
+{% endblock %}

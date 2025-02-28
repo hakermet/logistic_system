@@ -1,0 +1,63 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}SwiftGlobal Logistics - Головна{% endblock %}
+
+{% block content %}
+<div class="hero">
+    <div class="container">
+        <div class="row align-items-center">
+            <div class="col-lg-6">
+                <h1 class="display-4 fw-bold mb-4">SwiftGlobal Logistics</h1>
+                <p class="lead mb-4">Інноваційна система управління логістикою та доставкою</p>
+                <div class="d-flex gap-3">
+                    {% if user.is_authenticated %}
+                        <a href="{% url 'route_list' %}" class="btn btn-primary">Перейти до маршрутів</a>
+                    {% else %}
+                        <a href="{% url 'register' %}" class="btn btn-primary">Розпочати роботу</a>
+                        <a href="{% url 'login' %}" class="btn btn-outline-light">Увійти</a>
+                    {% endif %}
+                </div>
+            </div>
+            <div class="col-lg-6">
+                <img src="{% static 'images/logistics-hero.svg' %}" alt="Logistics" class="img-fluid">
+            </div>
+        </div>
+    </div>
+</div>
+
+<section class="features py-5">
+    <div class="container">
+        <h2 class="text-center mb-5">Наші можливості</h2>
+        <div class="row g-4">
+            <div class="col-md-4">
+                <div class="card h-100">
+                    <div class="card-body">
+                        <i class="fas fa-route feature-icon mb-3"></i>
+                        <h3 class="card-title h4">Управління маршрутами</h3>
+                        <p class="card-text">Створюйте та оптимізуйте маршрути доставки</p>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-4">
+                <div class="card h-100">
+                    <div class="card-body">
+                        <i class="fas fa-map-marked-alt feature-icon mb-3"></i>
+                        <h3 class="card-title h4">Відстеження</h3>
+                        <p class="card-text">Відстежуйте доставки в реальному часі</p>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-4">
+                <div class="card h-100">
+                    <div class="card-body">
+                        <i class="fas fa-chart-line feature-icon mb-3"></i>
+                        <h3 class="card-title h4">Аналітика</h3>
+                        <p class="card-text">Отримуйте детальну статистику та звіти</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+{% endblock %}

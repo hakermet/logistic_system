@@ -1,0 +1,43 @@
+<!-- templates/orders/order_list.html -->
+{% extends 'orders/base.html' %}
+
+{% block title %}Список замовлень{% endblock %}
+
+{% block content %}
+<h1>Список замовлень</h1>
+
+<a href="{% url 'create_order' %}" class="btn btn-primary">Створити замовлення</a>
+
+<form action="{% url 'search_orders' %}" method="get" class="my-3">
+    <input type="text" name="query" value="{{ query }}" placeholder="Пошук замовлень...">
+    <button type="submit">Пошук</button>
+</form>
+
+<table class="table">
+    <thead>
+        <tr>
+            <th>ID</th>
+            <th>Назва</th>
+            <th>Тип вантажу</th>
+            <th>Вага</th>
+            <th>Статус</th>
+            <th>Дії</th>
+        </tr>
+    </thead>
+    <tbody>
+        {% for order in orders %}
+        <tr>
+            <td>{{ order.id }}</td>
+            <td>{{ order.title }}</td>
+            <td>{{ order.cargo_type }}</td>
+            <td>{{ order.weight }} кг</td>
+            <td>{{ order.get_status_display }}</td>
+            <td>
+                <a href="{% url 'update_order' order.id %}" class="btn btn-sm btn-warning">Редагувати</a>
+                <a href="{% url 'delete_order' order.id %}" class="btn btn-sm btn-danger">Видалити</a>
+            </td>
+        </tr>
+        {% endfor %}
+    </tbody>
+</table>
+{% endblock %}

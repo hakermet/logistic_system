@@ -1,0 +1,14 @@
+<!-- templates/orders/create_order.html -->
+{% extends 'orders/base.html' %}
+
+{% block title %}Створення замовлення{% endblock %}
+
+{% block content %}
+<h1>Створення замовлення</h1>
+
+<form method="post">
+    {% csrf_token %}
+    {{ form.as_p }}
+    <button type="submit" class="btn btn-primary">Створити</button>
+</form>
+{% endblock %}

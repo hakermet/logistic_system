@@ -1,0 +1,147 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<div class="container mt-4">
+    <h2>Створити маршрут</h2>
+    
+    <form method="post" id="routeForm">
+        {% csrf_token %}
+        
+        <!-- Видимі поля -->
+        <div class="row">
+            <div class="col-md-6">
+                <div class="form-group">
+                    <label>Початкова точка:</label>
+                    <input type="text" name="start_place" id="start_place" class="form-control" required>
+                </div>
+            </div>
+            <div class="col-md-6">
+                <div class="form-group">
+                    <label>Кінцева точка:</label>
+                    <input type="text" name="end_place" id="end_place" class="form-control" required>
+                </div>
+            </div>
+        </div>
+
+        <!-- Приховані поля -->
+        <input type="hidden" name="start_lat" id="start_lat">
+        <input type="hidden" name="start_lng" id="start_lng">
+        <input type="hidden" name="end_lat" id="end_lat">
+        <input type="hidden" name="end_lng" id="end_lng">
+        <input type="hidden" name="distance" id="distance">
+        <input type="hidden" name="duration" id="duration">
+        
+        <!-- Карта -->
+        <div id="map" style="height: 400px; margin: 20px 0;"></div>
+        
+        <!-- Інформація про маршрут -->
+        <div id="routeInfo" class="alert alert-info" style="display:none;"></div>
+        
+        <button type="submit" class="btn btn-primary">Створити маршрут</button>
+    </form>
+</div>
+
+<!-- Підключення Mapbox -->
+<link href="https://api.mapbox.com/mapbox-gl-js/v2.10.0/mapbox-gl.css" rel="stylesheet" />
+<link href="https://api.mapbox.com/mapbox-gl-js/plugins/mapbox-gl-geocoder/v5.0.0/mapbox-gl-geocoder.css" rel="stylesheet" />
+
+{% block extra_js %}
+<!-- Змінено порядок завантаження скриптів -->
+<script src="https://api.mapbox.com/mapbox-gl-js/v2.10.0/mapbox-gl.js"></script>
+<script src="https://api.mapbox.com/mapbox-gl-js/plugins/mapbox-gl-geocoder/v5.0.0/mapbox-gl-geocoder.min.js"></script>
+<script async defer src="https://maps.googleapis.com/maps/api/js?key={{ google_maps_api_key }}&libraries=places&callback=initMap"></script>
+
+<script>
+// Ініціалізація Mapbox перед використанням
+mapboxgl.accessToken = '{{ mapbox_token }}';
+
+let map, directionsService, directionsRenderer;
+
+function initMap() {
+    // Ініціалізація Google Maps
+    map = new google.maps.Map(document.getElementById('map'), {
+        center: { lat: 48.379433, lng: 31.165581 },
+        zoom: 6
+    });
+
+    directionsService = new google.maps.DirectionsService();
+    directionsRenderer = new google.maps.DirectionsRenderer({ map: map });
+
+    // Ініціалізація Mapbox Geocoder для автозаповнення
+    setupMapboxAutocomplete('start_place', 'start');
+    setupMapboxAutocomplete('end_place', 'end');
+}
+
+function setupMapboxAutocomplete(inputId, type) {
+    const geocoder = new MapboxGeocoder({
+        accessToken: mapboxgl.accessToken,
+        countries: 'ua', // Обмеження до України
+        placeholder: 'Введіть місце',
+    });
+
+    geocoder.addTo(`#${inputId}`);
+
+    geocoder.on('result', function (e) {
+        const place = e.result;
+        if (place && place.center) {
+            document.getElementById(`${type}_lat`).value = place.center[1];
+            document.getElementById(`${type}_lng`).value = place.center[0];
+            calculateRoute();
+        }
+    });
+}
+
+function calculateRoute() {
+    const start_lat = document.getElementById('start_lat').value;
+    const start_lng = document.getElementById('start_lng').value;
+    const end_lat = document.getElementById('end_lat').value;
+    const end_lng = document.getElementById('end_lng').value;
+
+    if (!start_lat || !start_lng || !end_lat || !end_lng) return;
+
+    const start = { lat: parseFloat(start_lat), lng: parseFloat(start_lng) };
+    const end = { lat: parseFloat(end_lat), lng: parseFloat(end_lng) };
+
+    // Використання Mapbox Directions API для розрахунку маршруту
+    fetch(`https://api.mapbox.com/directions/v5/mapbox/driving/${start_lng},${start_lat};${end_lng},${end_lat}?access_token=${mapboxgl.accessToken}`)
+        .then(response => response.json())
+        .then(data => {
+            if (data.routes && data.routes.length > 0) {
+                const route = data.routes[0];
+                const distance = (route.distance / 1000).toFixed(2); // Відстань у кілометрах
+                const duration = Math.round(route.duration / 60); // Тривалість у хвилинах
+
+                document.getElementById('distance').value = distance;
+                document.getElementById('duration').value = duration;
+
+                document.getElementById('routeInfo').style.display = 'block';
+                document.getElementById('routeInfo').innerHTML = `
+                    <strong>Відстань:</strong> ${distance} км<br>
+                    <strong>Час у дорозі:</strong> ${Math.floor(duration / 60)}год ${duration % 60}хв
+                `;
+
+                // Відображення маршруту на Google Maps
+                directionsService.route({
+                    origin: start,
+                    destination: end,
+                    travelMode: 'DRIVING'
+                }, (response, status) => {
+                    if (status === 'OK') {
+                        directionsRenderer.setDirections(response);
+                    } else {
+                        console.error('Помилка побудови маршруту:', status);
+                    }
+                });
+            } else {
+                console.error('Маршрут не знайдено');
+            }
+        })
+        .catch(error => {
+            console.error('Помилка при отриманні маршруту:', error);
+        });
+}
+
+window.onload = initMap;
+</script>
+{% endblock %}
+{% endblock %}

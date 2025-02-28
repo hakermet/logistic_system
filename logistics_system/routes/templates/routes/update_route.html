@@ -1,0 +1,169 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Оновлення маршруту - SwiftGlobal Logistics{% endblock %}
+
+{% block content %}
+<div class="container">
+    <h2>Оновити маршрут</h2>
+    
+    <form method="post" id="routeForm">
+        {% csrf_token %}
+        <div class="row">
+            <div class="col-md-6 mb-3">
+                <label>Початкова точка:</label>
+                <input type="text" id="start_place" name="start_place" 
+                       class="form-control" value="{{ route.start_place }}" required>
+                <input type="hidden" id="id_start_lat" name="start_lat" value="{{ route.start_lat }}">
+                <input type="hidden" id="id_start_lng" name="start_lng" value="{{ route.start_lng }}">
+            </div>
+            <div class="col-md-6 mb-3">
+                <label>Кінцева точка:</label>
+                <input type="text" id="end_place" name="end_place" 
+                       class="form-control" value="{{ route.end_place }}" required>
+                <input type="hidden" id="id_end_lat" name="end_lat" value="{{ route.end_lat }}">
+                <input type="hidden" id="id_end_lng" name="end_lng" value="{{ route.end_lng }}">
+            </div>
+        </div>
+        
+        <input type="hidden" id="id_distance" name="distance" value="{{ route.distance }}">
+        <input type="hidden" id="id_duration" name="duration" value="{{ route.duration }}">
+        
+        <div id="map" style="height: 400px; width: 100%; margin: 20px 0;"></div>
+        <div id="routeInfo" class="alert alert-info">
+            <strong>Відстань:</strong> {{ route.distance }} км<br>
+            <strong>Час у дорозі:</strong> {{ route.duration }} хв
+        </div>
+        
+        <button type="submit" class="btn btn-primary">Зберегти зміни</button>
+        <a href="{% url 'routes:route_detail' route.id %}" class="btn btn-secondary">Скасувати</a>
+    </form>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="https://maps.googleapis.com/maps/api/js?key={{ google_maps_api_key }}&libraries=places"></script>
+<script src='https://api.mapbox.com/mapbox-gl-js/v2.14.1/mapbox-gl.js'></script>
+<script>
+let map, directionsService, directionsRenderer;
+let startAutocomplete, endAutocomplete;
+
+function initMap() {
+    // Ініціалізація Google Maps
+    map = new google.maps.Map(document.getElementById('map'), {
+        center: { lat: 48.379433, lng: 31.165581 },
+        zoom: 6
+    });
+
+    directionsService = new google.maps.DirectionsService();
+    directionsRenderer = new google.maps.DirectionsRenderer({map: map});
+
+    // Налаштування автозаповнення Google Places
+    startAutocomplete = new google.maps.places.Autocomplete(
+        document.getElementById('start_place'),
+        { componentRestrictions: { country: 'ua' } }
+    );
+
+    endAutocomplete = new google.maps.places.Autocomplete(
+        document.getElementById('end_place'),
+        { componentRestrictions: { country: 'ua' } }
+    );
+
+    // Обробники подій для автозаповнення
+    startAutocomplete.addListener('place_changed', function() {
+        const place = startAutocomplete.getPlace();
+        if (place.geometry) {
+            document.getElementById('id_start_lat').value = place.geometry.location.lat();
+            document.getElementById('id_start_lng').value = place.geometry.location.lng();
+            calculateRoute();
+        }
+    });
+
+    endAutocomplete.addListener('place_changed', function() {
+        const place = endAutocomplete.getPlace();
+        if (place.geometry) {
+            document.getElementById('id_end_lat').value = place.geometry.location.lat();
+            document.getElementById('id_end_lng').value = place.geometry.location.lng();
+            calculateRoute();
+        }
+    });
+
+    // Показуємо існуючий маршрут при завантаженні
+    showExistingRoute();
+}
+
+function showExistingRoute() {
+    const start = {
+        lat: parseFloat(document.getElementById('id_start_lat').value),
+        lng: parseFloat(document.getElementById('id_start_lng').value)
+    };
+    const end = {
+        lat: parseFloat(document.getElementById('id_end_lat').value),
+        lng: parseFloat(document.getElementById('id_end_lng').value)
+    };
+
+    if (start.lat && start.lng && end.lat && end.lng) {
+        directionsService.route({
+            origin: start,
+            destination: end,
+            travelMode: 'DRIVING'
+        }, (response, status) => {
+            if (status === 'OK') {
+                directionsRenderer.setDirections(response);
+            }
+        });
+    }
+}
+
+function calculateRoute() {
+    const start_lat = document.getElementById('id_start_lat').value;
+    const start_lng = document.getElementById('id_start_lng').value;
+    const end_lat = document.getElementById('id_end_lat').value;
+    const end_lng = document.getElementById('id_end_lng').value;
+
+    if (!start_lat || !start_lng || !end_lat || !end_lng) return;
+
+    // Розрахунок через Mapbox API
+    const mapboxUrl = `https://api.mapbox.com/directions/v5/mapbox/driving/${start_lng},${start_lat};${end_lng},${end_lat}?access_token={{ mapbox_token }}`;
+
+    fetch(mapboxUrl)
+        .then(response => response.json())
+        .then(data => {
+            if (data.routes && data.routes[0]) {
+                const route = data.routes[0];
+                const distance = route.distance / 1000; // Convert to km
+                const duration = Math.round(route.duration / 60); // Convert to minutes
+
+                document.getElementById('id_distance').value = distance.toFixed(2);
+                document.getElementById('id_duration').value = duration;
+
+                // Оновлюємо інформацію про маршрут
+                const routeInfo = document.getElementById('routeInfo');
+                routeInfo.innerHTML = `
+                    <strong>Відстань:</strong> ${distance.toFixed(2)} км<br>
+                    <strong>Час у дорозі:</strong> ${Math.floor(duration/60)}год ${duration%60}хв
+                `;
+
+                // Показуємо маршрут на карті
+                showExistingRoute();
+            }
+        })
+        .catch(error => {
+            console.error('Помилка Mapbox:', error);
+            alert('Помилка при розрахунку маршруту');
+        });
+}
+
+document.getElementById('routeForm').onsubmit = function(e) {
+    if (!document.getElementById('id_distance').value || 
+        !document.getElementById('id_duration').value) {
+        e.preventDefault();
+        alert('Будь ласка, дочекайтесь розрахунку маршруту');
+        return false;
+    }
+    return true;
+};
+
+window.onload = initMap;
+</script>
+{% endblock %}

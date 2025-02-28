@@ -1,0 +1,89 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block extra_css %}
+<link href='https://api.mapbox.com/mapbox-gl-js/v2.14.1/mapbox-gl.css' rel='stylesheet' />
+<link href='https://api.mapbox.com/mapbox-gl-js/plugins/mapbox-gl-geocoder/v4.7.0/mapbox-gl-geocoder.css' type='text/css' rel='stylesheet' />
+<style>
+    .mapboxgl-ctrl-geocoder {
+        width: 100%;
+        max-width: none;
+        box-shadow: none;
+        border: 1px solid #ced4da;
+        border-radius: 0.25rem;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <h2>Пошук маршрутів</h2>
+    
+    <form method="get" class="mb-4">
+        <div class="input-group">
+            <input type="text" name="query" class="form-control" 
+                   value="{{ query }}" placeholder="Введіть адресу...">
+            <button type="submit" class="btn btn-primary">Пошук</button>
+        </div>
+    </form>
+
+    {% if query %}
+        <h3>Результати пошуку для "{{ query }}"</h3>
+        {% if routes %}
+            <div class="list-group">
+                {% for route in routes %}
+                    <a href="{% url 'routes:route_detail' route.id %}" class="list-group-item list-group-item-action">
+                        <div class="d-flex w-100 justify-content-between">
+                            <h5 class="mb-1">{{ route.start_place }} → {{ route.end_place }}</h5>
+                            <small>{{ route.created_at|date:"d.m.Y H:i" }}</small>
+                        </div>
+                        <p class="mb-1">
+                            Відстань: {{ route.distance }} км | 
+                            Час: {{ route.duration }} хв
+                        </p>
+                    </a>
+                {% endfor %}
+            </div>
+        {% else %}
+            <div class="alert alert-info">
+                Маршрутів не знайдено
+            </div>
+        {% endif %}
+    {% endif %}
+    
+    <div class="mt-3">
+        <a href="{% url 'routes:route_list' %}" class="btn btn-secondary">
+            Повернутися до списку
+        </a>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script src='https://api.mapbox.com/mapbox-gl-js/v2.14.1/mapbox-gl.js'></script>
+<script src='https://api.mapbox.com/mapbox-gl-js/plugins/mapbox-gl-geocoder/v4.7.0/mapbox-gl-geocoder.min.js'></script>
+<script>
+    mapboxgl.accessToken = '{{ mapbox_api_key }}';
+
+    function createGeocoder(containerId, inputId) {
+        const geocoder = new MapboxGeocoder({
+            accessToken: mapboxgl.accessToken,
+            types: 'address,place',
+            placeholder: 'Введіть адресу...',
+            language: 'uk',
+            countries: 'ua'
+        });
+
+        geocoder.addTo('#' + containerId);
+
+        geocoder.on('result', function(e) {
+            document.getElementById(inputId).value = e.result.place_name;
+        });
+
+        return geocoder;
+    }
+
+    createGeocoder('start-geocoder', 'id_start_address');
+    createGeocoder('end-geocoder', 'id_end_address');
+</script>
+{% endblock %}

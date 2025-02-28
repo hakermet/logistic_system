@@ -1,0 +1,14 @@
+<!-- templates/orders/update_order.html -->
+{% extends 'orders/base.html' %}
+
+{% block title %}Редагування замовлення{% endblock %}
+
+{% block content %}
+<h1>Редагування замовлення</h1>
+
+<form method="post">
+    {% csrf_token %}
+    {{ form.as_p }}
+    <button type="submit" class="btn btn-primary">Зберегти</button>
+</form>
+{% endblock %}
